@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Epic Games Fab Manifest",
+  "description": "JSON schema for Epic Games Fab asset manifest files",
+  "type": "object",
+  "required": [
+    "ManifestFileVersion",
+    "bIsFileData",
+    "AppID",
+    "AppNameString",
+    "BuildVersionString",
+    "FileManifestList"
+  ],
+  "properties": {
+    "ManifestFileVersion": {
+      "type": "string",
+      "description": "Manifest file format version"
+    },
+    "bIsFileData": {
+      "type": "boolean",
+      "description": "Whether manifest contains file data"
+    },
+    "AppID": {
+      "type": "string",
+      "description": "Application identifier"
+    },
+    "AppNameString": {
+      "type": "string",
+      "description": "Application name"
+    },
+    "BuildVersionString": {
+      "type": "string",
+      "description": "Build version string"
+    },
+    "LaunchExeString": {
+      "type": "string",
+      "description": "Launch executable path"
+    },
+    "LaunchCommand": {
+      "type": "string",
+      "description": "Launch command"
+    },
+    "PrereqIds": {
+      "type": "array",
+      "description": "Prerequisite IDs",
+      "items": {
+        "type": "string"
+      }
+    },
+    "PrereqName": {
+      "type": "string",
+      "description": "Prerequisite name"
+    },
+    "PrereqPath": {
+      "type": "string",
+      "description": "Prerequisite path"
+    },
+    "PrereqArgs": {
+      "type": "string",
+      "description": "Prerequisite arguments"
+    },
+    "FileManifestList": {
+      "type": "array",
+      "description": "List of files in the manifest",
+      "items": {
+        "type": "object",
+        "required": ["Filename", "FileHash", "FileChunkParts"],
+        "properties": {
+          "Filename": {
+            "type": "string",
+            "description": "File path relative to install directory"
+          },
+          "FileHash": {
+            "type": "string",
+            "description": "File hash"
+          },
+          "FileChunkParts": {
+            "type": "array",
+            "description": "Chunk parts that make up this file",
+            "items": {
+              "type": "object",
+              "required": ["Guid", "Offset", "Size"],
+              "properties": {
+                "Guid": {
+                  "type": "string",
+                  "description": "Chunk GUID"
+                },
+                "Offset": {
+                  "type": "string",
+                  "description": "Offset within chunk"
+                },
+                "Size": {
+                  "type": "string",
+                  "description": "Size of data"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ChunkHashList": {
+      "type": "object",
+      "description": "Mapping of chunk GUIDs to hash values",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "ChunkShaList": {
+      "type": "object",
+      "description": "Mapping of chunk GUIDs to SHA-1 hashes",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "DataGroupList": {
+      "type": "object",
+      "description": "Mapping of chunk GUIDs to data group codes",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "ChunkFilesizeList": {
+      "type": "object",
+      "description": "Mapping of chunk GUIDs to file sizes",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "CustomFields": {
+      "type": "object",
+      "description": "Custom fields for extensibility",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
