@@ -155,6 +155,26 @@ matching = library.filter(lambda a: "keyword" in a.title)
 asset = library.find_by_uid("asset-uid-here")
 ```
 
+## Architecture
+
+### Model Organization
+
+The library uses a clean two-layer type system with models organized into separate files:
+
+**Domain Models** (`fab_api_client.models.domain`):
+- Business entities: `Asset`, `Library`, `Listing`, `License`, `Seller`
+- Format details: `AssetFormat`, `AssetFormatType`, `TechnicalSpecs`
+- Manifest types: `ParsedManifest`, `ManifestFile`, `DownloadResult`
+- Capabilities: `Capabilities`
+
+**API Response Types** (`fab_api_client.models.api`):
+- `LibrarySearchResponse` - Paginated library search results
+- `AssetFormatsResponse` - Asset format information
+- `DownloadInfoResponse` - Download URLs and metadata
+- `CursorInfo` - Pagination cursor data
+
+All models are exported from `fab_api_client.models` for convenient imports.
+
 ## API Reference
 
 ### Core Classes

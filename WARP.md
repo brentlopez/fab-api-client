@@ -38,9 +38,23 @@ fab-api-client/
 │   ├── utils.py                        # sanitize_filename()
 │   ├── manifests.py                    # validate_manifest(), detect_manifest_format()
 │   ├── models/
-│   │   ├── __init__.py
-│   │   ├── domain.py                   # Business models: Library, Asset, ParsedManifest
-│   │   └── api.py                      # API response types: LibrarySearchResponse, etc.
+│   │   ├── __init__.py                 # Exports all models
+│   │   ├── domain/                     # Business/domain models
+│   │   │   ├── __init__.py
+│   │   │   ├── asset.py                # Asset model
+│   │   │   ├── asset_format.py         # AssetFormat, AssetFormatType, TechnicalSpecs
+│   │   │   ├── capabilities.py         # Capabilities
+│   │   │   ├── library.py              # Library collection
+│   │   │   ├── license.py              # License
+│   │   │   ├── listing.py              # Listing
+│   │   │   ├── manifest.py             # ParsedManifest, ManifestFile, DownloadResult
+│   │   │   └── seller.py               # Seller
+│   │   └── api/                        # API response types
+│   │       ├── __init__.py
+│   │       ├── asset_formats.py        # AssetFormatsResponse
+│   │       ├── cursor.py               # CursorInfo
+│   │       ├── download_info.py        # DownloadInfoResponse
+│   │       └── library_search.py       # LibrarySearchResponse
 │   └── schemas/
 │       └── manifest.json               # JSON Schema for manifest format
 ```
@@ -89,19 +103,24 @@ The library uses an abstract base class pattern for authentication:
 
 The library maintains a clear separation between API responses and business logic:
 
-**Layer 1: API Response Types** (`models/api.py`)
-- `LibrarySearchResponse` - Raw paginated API response
-- `AssetFormatsResponse` - Raw response from asset formats endpoint
-- `DownloadInfoResponse` - Raw response from download info endpoint
+**Layer 1: API Response Types** (`models/api/`)
+- `LibrarySearchResponse` (`library_search.py`) - Raw paginated API response
+- `AssetFormatsResponse` (`asset_formats.py`) - Raw response from asset formats endpoint
+- `DownloadInfoResponse` (`download_info.py`) - Raw response from download info endpoint
+- `CursorInfo` (`cursor.py`) - Pagination cursor data
 - Each has conversion methods: `to_assets()`, `find_unreal_file_uid()`, etc.
 
-**Layer 2: Domain Models** (`models/domain.py`)
-- `Library` - Collection with filtering, searching (`filter()`, `find_by_uid()`)
-- `Asset` - Business entity representing an asset
-- `Listing` - Marketplace metadata
-- `ParsedManifest` - Parsed manifest with files list
-- `ManifestFile` - File entry in parsed manifest
-- `DownloadResult` - Download operation result with `load()` method
+**Layer 2: Domain Models** (`models/domain/`)
+- `Library` (`library.py`) - Collection with filtering, searching (`filter()`, `find_by_uid()`)
+- `Asset` (`asset.py`) - Business entity representing an asset
+- `Listing` (`listing.py`) - Marketplace metadata
+- `License` (`license.py`) - License information
+- `Seller` (`seller.py`) - Seller/creator information
+- `AssetFormat` (`asset_format.py`) - Asset format details with technical specs
+- `Capabilities` (`capabilities.py`) - Entitlement capabilities
+- `ParsedManifest` (`manifest.py`) - Parsed manifest with files list
+- `ManifestFile` (`manifest.py`) - File entry in parsed manifest
+- `DownloadResult` (`manifest.py`) - Download operation result with `load()` method
 
 **Why this separation?**
 - API types can evolve independently from business logic
@@ -257,17 +276,19 @@ When making changes:
 ### Adding New Features
 
 **Adding a new API endpoint:**
-1. Create response type in `models/api.py`
-2. Add conversion method to domain model
-3. Add method to `FabClient` class
-4. Export from `__init__.py`
-5. Document in README.md
+1. Create response type file in `models/api/` (e.g., `new_endpoint.py`)
+2. Add conversion method to appropriate domain model
+3. Export from `models/api/__init__.py`
+4. Add method to `FabClient` class
+5. Export from main `__init__.py` if needed
+6. Document in README.md
 
 **Adding new domain model:**
-1. Add dataclass to `models/domain.py`
+1. Create model file in `models/domain/` (e.g., `new_model.py`)
 2. Add corresponding API response type if needed
-3. Add conversion logic
-4. Export from `__init__.py`
+3. Add conversion logic in API response type
+4. Export from `models/domain/__init__.py`
+5. Export from main `__init__.py` if public API
 
 ## Git Workflow
 
