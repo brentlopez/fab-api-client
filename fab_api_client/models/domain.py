@@ -8,11 +8,76 @@ from typing import List, Optional, Dict, Any
 
 
 @dataclass
+class License:
+    """License information for an asset."""
+    name: str
+    slug: str
+    url: Optional[str] = None
+    type: Optional[str] = None
+    is_cc0: bool = False
+    price_tier: Optional[str] = None
+    uid: Optional[str] = None
+
+
+@dataclass
+class Seller:
+    """Seller/creator information."""
+    seller_id: str
+    seller_name: str
+    uid: str
+    profile_image_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    is_seller: bool = True
+
+
+@dataclass
+class AssetFormatType:
+    """Asset format type information."""
+    code: str
+    name: str
+    icon: str
+    group_name: str
+    extensions: List[str] = field(default_factory=list)
+
+
+@dataclass
+class TechnicalSpecs:
+    """Technical specifications for an asset format."""
+    unreal_engine_engine_versions: List[str] = field(default_factory=list)
+    unreal_engine_target_platforms: List[str] = field(default_factory=list)
+    unreal_engine_distribution_method: str = ""
+    technical_details: Optional[str] = None
+
+
+@dataclass
+class AssetFormat:
+    """Asset format details including technical specifications."""
+    asset_format_type: AssetFormatType
+    technical_specs: Optional[TechnicalSpecs] = None
+    versions: List[Dict[str, Any]] = field(default_factory=list)
+    raw_data: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class Capabilities:
+    """Entitlement capabilities."""
+    add_by_verse: bool = False
+    request_download_url: bool = False
+
+
+@dataclass
 class Listing:
     """Marketplace listing details for an asset."""
     title: str
+    uid: str
+    listing_type: str
     description: Optional[str] = None
     tags: List[str] = field(default_factory=list)
+    is_mature: bool = False
+    last_updated_at: Optional[datetime] = None
+    licenses: List[License] = field(default_factory=list)
+    seller: Optional[Seller] = None
+    asset_formats: List[AssetFormat] = field(default_factory=list)
     raw_data: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -22,15 +87,21 @@ class Asset:
     Unified asset/entitlement representation.
     
     Attributes:
-        uid: Unique identifier for the asset
+        uid: Unique identifier for the entitlement
         title: Asset name
         created_at: When asset was added to library
+        status: Entitlement status (e.g., "approved")
+        capabilities: Entitlement capabilities
+        granted_licenses: Licenses granted with this entitlement
         listing: Marketplace listing information
         raw_data: Complete raw API data for extensibility
     """
     uid: str
     title: str
     created_at: Optional[datetime] = None
+    status: str = ""
+    capabilities: Optional[Capabilities] = None
+    granted_licenses: List[License] = field(default_factory=list)
     listing: Optional[Listing] = None
     raw_data: Dict[str, Any] = field(default_factory=dict)
 
