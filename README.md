@@ -204,29 +204,103 @@ FabClient(
 Collection of assets with helper methods.
 - `assets: List[Asset]` - All assets
 - `total_count: int` - Total count
-- `filter(predicate) -> Library` - Filter assets
-- `find_by_uid(uid: str) -> Optional[Asset]` - Find by UID
+- `filter(predicate) -> Library` - Filter assets by predicate function
+- `find_by_uid(uid: str) -> Optional[Asset]` - Find asset by UID
 
 #### `Asset`
-Represents a Fab asset/entitlement.
+Represents an asset/entitlement in your library.
 - `uid: str` - Unique identifier
 - `title: str` - Asset name
 - `created_at: Optional[datetime]` - When added to library
-- `listing: Optional[Listing]` - Marketplace info
+- `status: str` - Entitlement status (e.g., "approved")
+- `capabilities: Optional[Capabilities]` - Entitlement capabilities
+- `granted_licenses: List[License]` - Licenses granted with this entitlement
+- `listing: Optional[Listing]` - Marketplace listing information
+- `raw_data: Dict[str, Any]` - Complete raw API data for extensibility
+
+#### `Listing`
+Marketplace listing details for an asset.
+- `title: str` - Listing title
+- `uid: str` - Unique identifier
+- `listing_type: str` - Type of listing
+- `description: Optional[str]` - Description
+- `tags: List[str]` - Tags
+- `is_mature: bool` - Mature content flag
+- `last_updated_at: Optional[datetime]` - Last update timestamp
+- `licenses: List[License]` - Available licenses
+- `seller: Optional[Seller]` - Seller information
+- `asset_formats: List[AssetFormat]` - Available formats
+- `raw_data: Dict[str, Any]` - Complete raw data
+
+#### `License`
+License information for an asset.
+- `name: str` - License name
+- `slug: str` - License slug
+- `url: Optional[str]` - License URL
+- `type: Optional[str]` - License type
+- `is_cc0: bool` - Whether it's CC0 licensed
+- `price_tier: Optional[str]` - Price tier
+- `uid: Optional[str]` - Unique identifier
+
+#### `Seller`
+Seller/creator information.
+- `seller_id: str` - Seller ID
+- `seller_name: str` - Seller name
+- `uid: str` - Unique identifier
+- `profile_image_url: Optional[str]` - Profile image URL
+- `cover_image_url: Optional[str]` - Cover image URL
+- `is_seller: bool` - Whether user is a seller
+
+#### `AssetFormat`
+Asset format details including technical specifications.
+- `asset_format_type: AssetFormatType` - Format type information
+- `technical_specs: Optional[TechnicalSpecs]` - Technical specifications
+- `versions: List[Dict[str, Any]]` - Version information
+- `raw_data: Dict[str, Any]` - Complete raw data
+
+#### `AssetFormatType`
+Asset format type information.
+- `code: str` - Format code (e.g., "unreal-engine")
+- `name: str` - Format name
+- `icon: str` - Icon identifier
+- `group_name: str` - Format group name
+- `extensions: List[str]` - File extensions
+
+#### `TechnicalSpecs`
+Technical specifications for an asset format.
+- `unreal_engine_engine_versions: List[str]` - Supported UE versions
+- `unreal_engine_target_platforms: List[str]` - Target platforms
+- `unreal_engine_distribution_method: str` - Distribution method
+- `technical_details: Optional[str]` - Additional technical details
+
+#### `Capabilities`
+Entitlement capabilities.
+- `add_by_verse: bool` - Can add by Verse
+- `request_download_url: bool` - Can request download URL
 
 #### `ParsedManifest`
-Parsed manifest.
-- `version: str`, `app_id: str`, `app_name: str`, `build_version: str`
+Parsed manifest data.
+- `version: str` - Manifest file version
+- `app_id: str` - Application ID
+- `app_name: str` - Application name
+- `build_version: str` - Build version string
 - `files: List[ManifestFile]` - File list
-- `raw_data: Dict` - Complete raw data
+- `raw_data: Dict[str, Any]` - Complete raw manifest data
+- `from_dict(data: Dict) -> ParsedManifest` - Create from dictionary
+
+#### `ManifestFile`
+Individual file entry in manifest.
+- `filename: str` - File name
+- `file_hash: str` - File hash
+- `file_chunk_parts: List[Dict[str, Any]]` - Chunk parts information
 
 #### `DownloadResult`
-Result of manifest download.
+Result of manifest download operation.
 - `success: bool` - Whether successful
 - `file_path: Optional[Path]` - Saved file path
 - `size: Optional[int]` - File size in bytes
 - `error: Optional[str]` - Error message if failed
-- `load() -> ParsedManifest` - Load and parse manifest
+- `load() -> ParsedManifest` - Load and parse manifest file
 
 ### Abstractions
 
