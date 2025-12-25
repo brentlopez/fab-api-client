@@ -2,52 +2,69 @@
 
 ## Project Overview
 
-The `fab-api-client` is a **generic** Python HTTP client library with pluggable authentication and content parsing. It's designed for building API integrations with marketplace-style services but contains **no hardcoded service-specific details**.
+The `fab-api-client` is a **platform-specific implementation** that extends `asset-marketplace-client-core` for marketplace API integration. It provides concrete HTTP client functionality with pluggable authentication and content parsing, but contains **no hardcoded service-specific details**.
+
+### Version: 2.0.0
+
+**Major Changes in v2.0.0:**
+- ✅ Extends `asset-marketplace-client-core` base classes
+- ✅ Modern build system (pyproject.toml + uv)
+- ✅ Enhanced security (path traversal prevention, filename sanitization)
+- ✅ Python 3.9+ minimum (was 3.7+)
+- ✅ Type-safe (mypy strict mode)
+- ⚠️ **Breaking changes** - See CHANGELOG.md for migration guide
 
 ### Key Features
 
+- **Extends Core Library** - Built on `asset-marketplace-client-core` with zero-dependency base classes
 - **Clean Public API** - No side effects, callback-based, proper exception handling
 - **Two-layer type system** - Domain models (Library, Asset) + API response types (LibrarySearchResponse)
 - **Pluggable authentication** - Bring your own auth provider via `FabAuthProvider` ABC
-- **Configurable endpoints** - Runtime endpoint configuration via `ApiEndpoints`
+- **Configurable endpoints** - Runtime endpoint configuration via `FabEndpoints`
 - **Custom parsers** - Implement `ManifestParser` for any content format
 - **Manifest validation** - Optional JSON schema validation
 - **Context manager support** - Automatic session cleanup
+- **Security by default** - SSL verification, timeouts, rate limiting, path security
 
 ### Tech Stack
 
-- **Python 3.7+** - Minimum version (uses dataclasses, type hints, pathlib)
-- **requests** - HTTP client
-- **jsonschema** (optional) - Manifest validation
-- **tqdm** (optional) - CLI progress bars
+- **Python 3.9+** - Minimum version (modern type hints, dataclasses)
+- **asset-marketplace-client-core** - Base classes and utilities
+- **requests>=2.28.0** - HTTP client
+- **jsonschema>=4.0.0** (optional) - Manifest validation
+- **uv** - Build and dependency management
 
 ## Project Structure
 
 ```
 fab-api-client/
 ├── README.md                           # User documentation
+├── CHANGELOG.md                        # Version history and migration guides
+├── SECURITY.md                         # Security policy and best practices
+├── SECURITY_AUDIT.md                   # Comprehensive security assessment
 ├── WARP.md                             # This file - AI assistant guidance
-├── setup.py                            # Package setup with optional dependencies
-├── requirements.txt                    # Core dependencies
-├── fab_api_client/
+├── pyproject.toml                      # Modern build config (PEP 621)
+├── uv.lock                             # Locked dependencies for reproducible builds
+├── .gitignore                          # Git ignore patterns (includes security patterns)
+├── src/fab_api_client/                 # Source code (src/ layout)
 │   ├── __init__.py                     # Public API exports
-│   ├── client.py                       # FabClient - main API client
-│   ├── auth.py                         # Authentication abstractions (FabAuthProvider, CookieAuthProvider, ApiEndpoints)
-│   ├── manifest_parser.py              # Parser abstractions (ManifestParser, JsonManifestParser)
-│   ├── exceptions.py                   # Exception hierarchy
-│   ├── utils.py                        # sanitize_filename()
+│   ├── client.py                       # FabClient - extends MarketplaceClient
+│   ├── auth.py                         # FabAuthProvider, CookieAuthProvider, FabEndpoints
+│   ├── manifest_parser.py              # ManifestParser, JsonManifestParser
+│   ├── exceptions.py                   # Exception hierarchy (extends core)
+│   ├── utils.py                        # Imports from core for backward compatibility
 │   ├── manifests.py                    # validate_manifest(), detect_manifest_format()
 │   ├── models/
 │   │   ├── __init__.py                 # Exports all models
 │   │   ├── domain/                     # Business/domain models
 │   │   │   ├── __init__.py
-│   │   │   ├── asset.py                # Asset model
+│   │   │   ├── asset.py                # Asset - extends BaseAsset
 │   │   │   ├── asset_format.py         # AssetFormat, AssetFormatType, TechnicalSpecs
 │   │   │   ├── capabilities.py         # Capabilities
-│   │   │   ├── library.py              # Library collection
+│   │   │   ├── library.py              # Library - extends BaseCollection
 │   │   │   ├── license.py              # License
 │   │   │   ├── listing.py              # Listing
-│   │   │   ├── manifest.py             # ParsedManifest, ManifestFile, DownloadResult
+│   │   │   ├── manifest.py             # ParsedManifest, ManifestFile, ManifestDownloadResult
 │   │   │   └── seller.py               # Seller
 │   │   └── api/                        # API response types
 │   │       ├── __init__.py
@@ -57,9 +74,35 @@ fab-api-client/
 │   │       └── library_search.py       # LibrarySearchResponse
 │   └── schemas/
 │       └── manifest.json               # JSON Schema for manifest format
-```
+└── tests/
+    └── test_enhanced_models.py         # Tests for extended models
 
 ## Architecture
+
+### Core Library Integration
+
+As of v2.0.0, `fab-api-client` extends `asset-marketplace-client-core`:
+
+**Architecture Benefits:**
+- ✅ **Separation of concerns** - Core has zero dependencies, platform client has runtime deps
+- ✅ **Security by default** - Inherits security utilities from core
+- ✅ **Type safety** - Full mypy strict mode compliance
+- ✅ **Forward compatibility** - Can catch both platform and core exception types
+
+**Class Hierarchy:**
+```
+Core Library (asset-marketplace-client-core):
+├── MarketplaceClient (ABC) → FabClient extends this
+├── MarketplaceError → FabError extends this
+├── BaseAsset → Asset extends this
+└── BaseCollection → Library extends this
+```
+
+**Key Interfaces Implemented:**
+- `FabClient.get_collection()` - Returns Library (delegates to `get_library()`)
+- `FabClient.get_asset(uid)` - Fetches library and filters by UID
+- `FabClient.download_asset(asset, path)` - Returns core's `DownloadResult`
+- `FabClient.close()` - Closes HTTP session
 
 ### Pluggable Authentication Pattern
 
@@ -74,16 +117,21 @@ The library uses an abstract base class pattern for authentication:
 - Accepts cookies dict and `ApiEndpoints` configuration
 - No service-specific details
 
-**`ApiEndpoints` (dataclass)**:
+**`FabEndpoints` (extends `EndpointConfig` from core)**:
+- `base_url: str` - Base URL for the marketplace API (required by core)
 - `library_search: str` - Library search endpoint URL
 - `asset_formats: str` - Asset formats endpoint (template with `{asset_uid}`)
 - `download_info: str` - Download info endpoint (template with `{asset_uid}`, `{file_uid}`)
+
+**Backward Compatibility:**
+- `ApiEndpoints` - Alias for `FabEndpoints` (deprecated, use `FabEndpoints`)
 
 **Why this pattern?**
 - Library is service-agnostic
 - Users can implement custom auth (OAuth, JWT, API keys, etc.)
 - Endpoint URLs are not hardcoded
 - Easy to test with mock providers
+- Extends core's `EndpointConfig` for forward compatibility
 
 ### Pluggable Manifest Parsing
 
@@ -120,7 +168,8 @@ The library maintains a clear separation between API responses and business logi
 - `Capabilities` (`capabilities.py`) - Entitlement capabilities
 - `ParsedManifest` (`manifest.py`) - Parsed manifest with files list
 - `ManifestFile` (`manifest.py`) - File entry in parsed manifest
-- `DownloadResult` (`manifest.py`) - Download operation result with `load()` method
+- `ManifestDownloadResult` (`manifest.py`) - Manifest download result with `load()` method
+  - Note: `DownloadResult` is backward compatibility alias (deprecated)
 
 **Why this separation?**
 - API types can evolve independently from business logic
@@ -157,14 +206,19 @@ The library expects API responses in a specific structure:
 
 ### Error Handling
 
-**Exception hierarchy:**
+**Exception hierarchy (multiple inheritance from core):**
 ```
-FabError (base)
-├── FabAuthenticationError (401, 403)
-├── FabAPIError (other HTTP errors)
-├── FabNotFoundError (404)
-└── FabNetworkError (timeouts, connection errors)
+FabError(MarketplaceError) - base exception
+├── FabAuthenticationError(FabError, MarketplaceAuthenticationError) - 401, 403
+├── FabAPIError(FabError, MarketplaceAPIError) - other HTTP errors
+├── FabNotFoundError(FabError, MarketplaceNotFoundError) - 404
+└── FabNetworkError(FabError, MarketplaceNetworkError) - timeouts, connection
 ```
+
+**Multiple Inheritance Benefits:**
+- ✅ Backward compatible - Can catch `FabError` or `FabAuthenticationError`
+- ✅ Forward compatible - Can catch core's `MarketplaceAuthenticationError`
+- ✅ Type safe - Works with both exception hierarchies
 
 **Philosophy:**
 - Library never calls `sys.exit()` or prints to stdout
@@ -172,34 +226,56 @@ FabError (base)
 - Callers decide how to handle errors
 - Authentication errors are distinct from other API errors
 
+### Security Features
+
+**Built-in security (v2.0.0):**
+- ✅ **Path traversal prevention** - Uses `safe_create_directory()` from core
+- ✅ **Filename sanitization** - Uses `sanitize_filename()` from core
+- ✅ **URL validation** - Uses `validate_url()` from core
+- ✅ **SSL verification** - Enabled by default in `CookieAuthProvider`
+- ✅ **Request timeouts** - 5s connect, 30s read (configurable)
+- ✅ **Rate limiting** - Configurable delay between requests
+- ✅ **Type safety** - Full mypy strict mode compliance
+
+**Security Documentation:**
+- See `SECURITY.md` for vulnerability reporting and best practices
+- See `SECURITY_AUDIT.md` for comprehensive security assessment
+
 ## Usage Patterns
 
 ### Basic Library Usage
 
 ```python
-from fab_api_client import FabClient, CookieAuthProvider, ApiEndpoints
+import os
+from fab_api_client import FabClient, CookieAuthProvider, FabEndpoints
 
-# Configure endpoints
-endpoints = ApiEndpoints(
-    library_search="https://example.com/api/library/search",
-    asset_formats="https://example.com/api/assets/{asset_uid}/formats",
-    download_info="https://example.com/api/assets/{asset_uid}/files/{file_uid}/download"
+# Configure endpoints (v2.0.0 - note FabEndpoints and base_url required)
+endpoints = FabEndpoints(
+    base_url="https://marketplace.example.com",  # Required in v2.0.0
+    library_search="/api/library/search",
+    asset_formats="/api/assets/{asset_uid}/formats",
+    download_info="/api/assets/{asset_uid}/files/{file_uid}/download"
 )
 
-# Create auth provider
+# Create auth provider (NEVER hardcode credentials - use environment variables)
 auth = CookieAuthProvider(
-    cookies={"session_id": "xxx", "csrf_token": "yyy"},
-    endpoints=endpoints
+    cookies={
+        "session_id": os.environ["MARKETPLACE_SESSION"],
+        "csrf_token": os.environ["MARKETPLACE_CSRF"]
+    },
+    endpoints=endpoints,
+    verify_ssl=True,  # Default - always keep enabled
+    timeout=(5, 30)   # (connect, read) timeouts
 )
 
 # Use client
-client = FabClient(auth=auth)
-library = client.get_library()
-
-# Filter and process
-matching = library.filter(lambda a: "keyword" in a.title)
-for asset in matching:
-    print(f"{asset.title} ({asset.uid})")
+with FabClient(auth=auth) as client:
+    library = client.get_library()
+    
+    # Filter and process
+    matching = library.filter(lambda a: "keyword" in a.title)
+    for asset in matching:
+        print(f"{asset.title} ({asset.uid})")
 ```
 
 ### Batch Downloads with Progress
@@ -222,13 +298,19 @@ failed = [r for r in results if not r.success]
 ### Manifest Handling
 
 ```python
+# download_manifest() returns ManifestDownloadResult (not ParsedManifest directly)
 result = client.download_manifest(asset, "./manifests")
-manifest = result.load()
 
-print(f"Manifest version: {manifest.version}")
-print(f"Files: {len(manifest.files)}")
-for file in manifest.files[:5]:
-    print(f"  {file.filename} ({file.file_size} bytes)")
+# Check success and load parsed manifest
+if result.success:
+    manifest = result.load()  # Returns ParsedManifest
+    
+    print(f"Manifest version: {manifest.version}")
+    print(f"Files: {len(manifest.files)}")
+    for file in manifest.files[:5]:
+        print(f"  {file.filename} ({file.file_size} bytes)")
+else:
+    print(f"Failed: {result.error}")
 ```
 
 ### Context Manager Usage
@@ -249,15 +331,21 @@ with FabClient(auth=auth) as client:
 - **No side effects** - Library code never prints, exits, or writes files without explicit API call
 - **Callbacks** - Use `on_progress` callbacks for status updates
 - **Error messages** - Clear, actionable error messages in exceptions
+- **Security first** - Always use core's security utilities (safe_create_directory, sanitize_filename, validate_url)
+- **Mypy strict mode** - All code must pass `uv run mypy src/` with strict=true
 
 ### Testing Approach
 
 When making changes:
-1. Test API response parsing with `isinstance()` checks for lists
-2. Verify union type handling works with both manifest types
-3. Test cookie extraction (mock subprocess for Proxyman)
-4. Verify exception hierarchy propagates correctly
-5. Test context manager cleanup
+1. **Type checking**: Run `uv run mypy src/` (must pass with strict mode)
+2. **Linting**: Run `uv run ruff check src/` and `uv run ruff format src/`
+3. **Dependency audit**: Run `uv run pip-audit` (no vulnerabilities)
+4. **Unit tests**: Run `uv run pytest` with coverage
+5. **API response parsing**: Test with `isinstance()` checks for lists
+6. **Union type handling**: Verify works with both manifest types
+7. **Exception hierarchy**: Verify multiple inheritance works correctly
+8. **Context manager**: Test session cleanup
+9. **Security**: Test path traversal prevention, filename sanitization, URL validation
 
 ### Common Gotchas
 
@@ -276,19 +364,23 @@ When making changes:
 ### Adding New Features
 
 **Adding a new API endpoint:**
-1. Create response type file in `models/api/` (e.g., `new_endpoint.py`)
+1. Create response type file in `src/fab_api_client/models/api/` (e.g., `new_endpoint.py`)
 2. Add conversion method to appropriate domain model
 3. Export from `models/api/__init__.py`
 4. Add method to `FabClient` class
 5. Export from main `__init__.py` if needed
-6. Document in README.md
+6. Add type hints and ensure mypy strict mode passes
+7. Document in README.md and CHANGELOG.md
 
 **Adding new domain model:**
-1. Create model file in `models/domain/` (e.g., `new_model.py`)
-2. Add corresponding API response type if needed
-3. Add conversion logic in API response type
-4. Export from `models/domain/__init__.py`
-5. Export from main `__init__.py` if public API
+1. Create model file in `src/fab_api_client/models/domain/` (e.g., `new_model.py`)
+2. Consider if it should extend a core base class (BaseAsset, BaseCollection)
+3. Add corresponding API response type if needed
+4. Add conversion logic in API response type
+5. Export from `models/domain/__init__.py`
+6. Export from main `__init__.py` if public API
+7. Add type hints and ensure mypy strict mode passes
+8. Update CHANGELOG.md
 
 ## Git Workflow
 
@@ -345,26 +437,134 @@ Potential enhancements to consider:
 5. **Parallel downloads** - Download manifests concurrently with asyncio
 6. **CLI tool** - Command-line interface using the library
 
-## Dependencies
+## Build System & Dependencies
 
-**Core:**
-- `requests>=2.31.0` - HTTP client
+**Build System:**
+- `pyproject.toml` - Modern PEP 621 build configuration
+- `uv` - Fast dependency manager and build tool
+- `uv.lock` - Locked dependencies for reproducible builds
+- `hatchling` - Build backend
+
+**Runtime Dependencies:**
+- `asset-marketplace-client-core>=0.1.0` - Core library (zero dependencies)
+- `requests>=2.28.0` - HTTP client
 
 **Optional:**
 - `jsonschema>=4.0.0` - Manifest validation (install with `[validation]`)
-- `tqdm>=4.66.0` - Progress bars (install with `[cli]`)
 
 **Development:**
-- `pytest` - Testing framework
-- `mypy` - Static type checking
-- `black` - Code formatting
+- `pytest>=7.0.0` - Testing framework
+- `mypy>=1.0.0` - Static type checking (strict mode)
+- `ruff>=0.1.0` - Linting and formatting (replaces black, isort, flake8)
+- `pip-audit` - Dependency vulnerability scanning
+
+**Installation:**
+```bash
+# Install for development
+uv sync --extra dev
+
+# Install with validation support
+uv sync --extra validation
+
+# Run tests
+uv run pytest
+
+# Type check
+uv run mypy src/
+
+# Lint and format
+uv run ruff check src/
+uv run ruff format src/
+
+# Security audit
+uv run pip-audit
+```
 
 ## License & Terms
 
 MIT License - see LICENSE file for details.
 
+## Security
+
+Security is a top priority in v2.0.0:
+
+### Security Documentation
+
+- **SECURITY.md** - Vulnerability reporting, best practices, secure usage patterns
+- **SECURITY_AUDIT.md** - Comprehensive security assessment, risk analysis, recommendations
+
+### Security Features
+
+- ✅ **Path traversal prevention** - Uses `safe_create_directory()` from core
+- ✅ **Filename sanitization** - Uses `sanitize_filename()` from core
+- ✅ **URL validation** - Uses `validate_url()` from core
+- ✅ **SSL verification** - Enabled by default
+- ✅ **Request timeouts** - Prevents hanging requests
+- ✅ **Rate limiting** - Application-level rate limiting
+- ✅ **Type safety** - Full mypy strict mode compliance
+- ✅ **No unsafe operations** - No eval, exec, or shell commands
+
+### Security Best Practices
+
+1. **Never hardcode credentials** - Use environment variables or secret managers
+2. **Always verify SSL** - Never disable in production
+3. **Enable schema validation** - Use `JsonManifestParser(validate_schema=True)`
+4. **Monitor dependencies** - Run `uv run pip-audit` regularly
+5. **Keep updated** - Watch for security advisories
+6. **Handle errors safely** - Don't expose credentials in logs
+
+**Example Secure Usage:**
+```python
+import os
+from fab_api_client import FabClient, CookieAuthProvider, FabEndpoints
+
+# ✅ GOOD - Load credentials from environment
+endpoints = FabEndpoints(
+    base_url="https://marketplace.example.com",
+    library_search="/api/library/search",
+    asset_formats="/api/assets/{asset_uid}/formats",
+    download_info="/api/assets/{asset_uid}/files/{file_uid}/download"
+)
+
+auth = CookieAuthProvider(
+    cookies={
+        "session_id": os.environ["MARKETPLACE_SESSION"],
+        "csrf_token": os.environ["MARKETPLACE_CSRF"]
+    },
+    endpoints=endpoints,
+    verify_ssl=True,  # Always keep enabled
+    timeout=(5, 30)
+)
+
+with FabClient(auth=auth, rate_limit_delay=1.0) as client:
+    library = client.get_library()
+```
+
+**See SECURITY.md for complete security guidelines.**
+
 ## Related Projects
 
+- **asset-marketplace-client-core** - Core library with base classes and utilities
+- **asset-marketplace-client-system** - System integration library
 - Can be paired with service-specific adapter projects that implement the authentication and parsing abstractions (e.g., fab-egl-adapter for Epic Games Launcher)
 - Can be used with manifest parsing tools for asset management
 - Can be integrated into CI/CD pipelines for automated asset tracking
+
+## Migration Guides
+
+### Migrating from v1.x to v2.0.0
+
+See `CHANGELOG.md` for detailed migration guide covering:
+- Updated dependencies (Python 3.9+, requests>=2.28.0)
+- API changes (`ApiEndpoints` → `FabEndpoints`, requires `base_url`)
+- Return type changes (`download_manifest()` returns `ManifestDownloadResult`)
+- New security features
+- Project structure changes (root → src/ layout)
+
+### Adapter Migration
+
+If you maintain an adapter that uses fab-api-client:
+- See `../asset-marketplace-client-system/docs/migration/fab_egl_adapter_migration.md`
+- Update to FabEndpoints with base_url
+- Handle ManifestDownloadResult return type
+- Test with new exception hierarchy

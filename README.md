@@ -1,30 +1,42 @@
 # Fab API Client
 
-A generic Python HTTP client library with pluggable authentication and content parsing. Designed for building API integrations with marketplace-style services.
+A Python client library for Fab.com marketplace API, extending `asset-marketplace-client-core` for multi-platform compatibility.
+
+> **Version 2.0.0** - Now extends asset-marketplace-client-core. See [Migration Guide](#migration-from-v1x) for upgrading from v1.x.
 
 ## Features
 
 - 🔌 **Pluggable Auth** - Bring your own authentication provider
 - 🌐 **Configurable Endpoints** - Runtime endpoint configuration
 - 📦 **Custom Parsers** - Implement parsers for any content format
-- ✅ **Type Safe** - Full type hints and dataclasses
+- ✅ **Type Safe** - Full type hints and dataclasses with mypy strict mode
 - 🔍 **Validation** - Optional JSON schema validation
 - 🎯 **Clean API** - Callback-based, no side effects, proper exception handling
+- 🔒 **Security First** - Path traversal prevention, URL validation, secure defaults
+- 🚀 **Modern Tooling** - uv + hatchling + pyproject.toml
+- 🤝 **Multi-Platform** - Extends core library for compatibility across marketplaces
+
+## Requirements
+
+- Python 3.9 or higher
+- Dependencies: `asset-marketplace-client-core>=0.1.0`, `requests>=2.28.0`
 
 ## Installation
 
 ```bash
-# Core library only
-pip install -e .
+# Using uv (recommended)
+uv pip install fab-api-client
 
-# With manifest validation support
-pip install -e .[validation]
+# Using pip
+pip install fab-api-client
 
-# With CLI tools
-pip install -e .[cli]
+# For development
+cd fab-api-client
+uv sync --extra dev
 
-# Full development install
-pip install -e .[dev]
+# Optional extras
+uv pip install fab-api-client[validation]  # JSON schema validation
+uv pip install fab-api-client[cli]          # CLI tools (tqdm)
 ```
 
 ## Quick Start
@@ -32,10 +44,11 @@ pip install -e .[dev]
 ### Basic Usage
 
 ```python
-from fab_api_client import FabClient, CookieAuthProvider, ApiEndpoints
+from fab_api_client import FabClient, CookieAuthProvider, FabEndpoints
 
 # Configure API endpoints
-endpoints = ApiEndpoints(
+endpoints = FabEndpoints(
+    base_url="https://example.com",
     library_search="https://example.com/api/library/search",
     asset_formats="https://example.com/api/assets/{asset_uid}/formats",
     download_info="https://example.com/api/assets/{asset_uid}/files/{file_uid}/download"
@@ -366,24 +379,84 @@ if isinstance(manifest, ParsedManifest):
 ## Development
 
 ```bash
-# Install in development mode
-pip install -e .[dev]
+# Clone and setup
+git clone https://github.com/brentlopez/fab-api-client
+cd fab-api-client
+uv sync --extra dev
 
 # Run tests
-pytest
+uv run pytest
 
 # Type checking
-mypy fab_api_client
+uv run mypy src/
+
+# Linting and formatting
+uv run ruff format src/
+uv run ruff check src/
+
+# Security audit
+uv run pip-audit
 ```
 
-## Requirements
+## Migration from v1.x
 
-- Python 3.7+
-- `requests` >= 2.31.0
+### Breaking Changes in v2.0.0
 
-### Optional Dependencies
-- `jsonschema` >= 4.0.0 - For manifest validation
-- `tqdm` >= 4.66.0 - For CLI progress bars
+**Python Version:**
+- Minimum version increased from 3.7 to 3.9
+
+**Type Names:**
+- `ApiEndpoints` → `FabEndpoints` (alias maintained for compatibility)
+- `DownloadResult` → `ManifestDownloadResult` for manifest operations (alias maintained)
+
+**Endpoint Configuration:**
+```python
+# v1.x
+endpoints = ApiEndpoints(
+    library_search="https://...",
+    asset_formats="https://...",
+    download_info="https://..."
+)
+
+# v2.x (requires base_url)
+endpoints = FabEndpoints(
+    base_url="https://...",  # NEW: Required field
+    library_search="https://...",
+    asset_formats="https://...",
+    download_info="https://..."
+)
+```
+
+**Manifest Downloads:**
+```python
+# v1.x
+manifest = client.download_manifest(asset, "./manifests")
+print(f"Version: {manifest.version}")
+
+# v2.x
+result = client.download_manifest(asset, "./manifests")
+if result.success:
+    manifest = result.load()  # Parse the manifest
+    print(f"Version: {manifest.version}")
+```
+
+### New Features in v2.0.0
+
+**New Methods:**
+- `client.get_asset(asset_uid)` - Fetch single asset by UID
+- `client.download_asset(asset_uid, output_dir, ...)` - Download using core interface
+- `client.close()` - Explicit resource cleanup
+
+**Security Improvements:**
+- Path traversal prevention
+- URL validation before downloads
+- Secure filename sanitization
+- Configurable rate limiting
+
+**Multi-Platform Compatibility:**
+Now extends `asset-marketplace-client-core` for compatibility with other marketplace clients.
+
+For detailed migration instructions, see [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

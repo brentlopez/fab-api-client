@@ -7,6 +7,7 @@ from typing import Optional
 @dataclass
 class License:
     """License information for an asset."""
+
     name: str
     slug: str
     url: Optional[str] = None

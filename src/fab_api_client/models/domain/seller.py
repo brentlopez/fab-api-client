@@ -7,6 +7,7 @@ from typing import Optional
 @dataclass
 class Seller:
     """Seller/creator information."""
+
     seller_id: str
     seller_name: str
     uid: str
