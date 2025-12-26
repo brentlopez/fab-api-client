@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "fab-api-client"
-version = "2.0.0"
+version = "2.1.0"
 description = "Python client for Fab.com marketplace API"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -32,11 +32,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+async = ["aiohttp>=3.9.0"]
 validation = ["jsonschema>=4.0.0"]
 cli = ["tqdm>=4.66.0"]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "pytest-asyncio>=0.21.0",
+    "aioresponses>=0.7.0",
     "mypy>=1.0",
     "ruff>=0.1.0",
     "pip-audit>=2.0",
@@ -82,6 +85,9 @@ select = [
     "UP",  # pyupgrade
 ]
 ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402"]  # Allow imports after try/except for optional dependencies
 
 [tool.ruff.format]
 quote-style = "double"

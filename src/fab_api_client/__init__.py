@@ -16,7 +16,7 @@ Example:
     >>> library = client.get_library()
 """
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 # Core client
 # Authentication & Configuration
@@ -27,6 +27,17 @@ from .auth import (
     FabEndpoints,
 )
 from .client import FabClient
+
+# Async support (optional - requires aiohttp)
+_async_available = False
+try:
+    from .auth import AsyncCookieAuthProvider  # noqa: F401
+    from .client import FabAsyncClient  # noqa: F401
+
+    _async_available = True
+except ImportError:
+    # aiohttp not installed - async support not available
+    pass
 
 # Exceptions
 from .exceptions import (
@@ -117,3 +128,12 @@ __all__ = [
     "validate_manifest",
     "detect_manifest_format",
 ]
+
+# Add async exports if available
+if _async_available:
+    __all__.extend(
+        [
+            "FabAsyncClient",
+            "AsyncCookieAuthProvider",
+        ]
+    )

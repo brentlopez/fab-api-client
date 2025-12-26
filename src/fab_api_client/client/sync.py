@@ -15,20 +15,20 @@ from asset_marketplace_core import (
     validate_url,
 )
 
-from .auth import FabAuthProvider
-from .exceptions import (
+from ..auth import FabAuthProvider
+from ..exceptions import (
     FabAPIError,
     FabAuthenticationError,
     FabNetworkError,
     FabNotFoundError,
 )
-from .manifest_parser import JsonManifestParser, ManifestParser
-from .models.api import (
+from ..manifest_parser import JsonManifestParser, ManifestParser
+from ..models.api import (
     AssetFormatsResponse,
     DownloadInfoResponse,
     LibrarySearchResponse,
 )
-from .models.domain import Asset, Library, ManifestDownloadResult
+from ..models.domain import Asset, Library, ManifestDownloadResult
 
 
 class FabClient(MarketplaceClient):
@@ -116,8 +116,6 @@ class FabClient(MarketplaceClient):
         asset = library.find_by_uid(asset_uid)
 
         if asset is None:
-            from .exceptions import FabNotFoundError
-
             raise FabNotFoundError(f"Asset with UID '{asset_uid}' not found")
 
         # Type check: ensure we're returning Asset, not BaseAsset

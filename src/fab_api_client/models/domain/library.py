@@ -1,7 +1,8 @@
 """Library domain model."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Callable, Sequence
+from typing import Callable
 
 from asset_marketplace_core import BaseCollection
 
