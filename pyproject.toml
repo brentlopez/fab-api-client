@@ -27,7 +27,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "asset-marketplace-client-core @ file:///Users/brentlopez/Projects/asset-marketplace-client-core",
+    "asset-marketplace-client-core",
     "requests>=2.28.0",
 ]
 
@@ -56,6 +56,17 @@ packages = ["src/fab_api_client"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.dependency-versions]
+# Version tags for GitHub-hosted dependencies
+# Used by scripts/switch-deps.sh when switching from local to GitHub mode
+github-user = "brentlopez"
+asset-marketplace-client-core = "v0.2.0"
+
+[tool.uv.sources]
+# GitHub dependencies (default for distribution)
+# Use ./scripts/switch-deps.sh local to switch to local paths for development
+asset-marketplace-client-core = { git = "https://github.com/brentlopez/asset-marketplace-client-core.git", tag = "v0.2.0" }
 
 [tool.mypy]
 python_version = "3.9"
